@@ -5,7 +5,7 @@
 *.pdf
 
 # collected data
-.data/
+data/
 
 # Python
 __pycache__/
