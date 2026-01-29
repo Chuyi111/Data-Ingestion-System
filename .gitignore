@@ -1,8 +1,8 @@
 # Claude AI
 .claude/
 
-# PDF files
-*.pdf
+# prior docs
+prior/
 
 # collected data
 data/
