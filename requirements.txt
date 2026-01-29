@@ -1,0 +1,13 @@
+# Google Play Review Scraper Dependencies
+# Data Ingestion System - Phase I
+
+# Core scraping library
+google-play-scraper>=1.2.4
+
+# Progress bars for CLI feedback
+tqdm>=4.65.0
+
+# Data handling (included in standard library but listed for clarity)
+# json - built-in
+# csv - built-in
+# dataclasses - built-in (Python 3.7+)
