@@ -4,6 +4,10 @@
 # PDF files
 *.pdf
 
+# collected data
+*.csv
+*.json
+
 # Python
 __pycache__/
 *.py[cod]

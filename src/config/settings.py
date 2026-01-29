@@ -13,9 +13,26 @@ from typing import List
 # =============================================================================
 # Popular apps with high review volumes for testing
 DEFAULT_TARGET_APPS: List[str] = [
-    "com.whatsapp",           # WhatsApp - billions of downloads
-    "com.instagram.android",   # Instagram - massive user base
-    "com.spotify.music",       # Spotify - diverse review content
+    "com.whatsapp",
+    "com.instagram.android",
+    "com.zhiliaoapp.musically",
+    "com.android.chrome",
+    "com.google.android.gm",
+    "com.google.android.youtube",
+    "com.google.android.apps.maps",
+    "com.facebook.katana",
+    "com.facebook.orca",
+    "com.spotify.music",
+    "com.snapchat.android",
+    "com.discord",
+    "com.amazon.mShop.android.shopping",
+    "org.telegram.messenger",
+    "com.reddit.frontpage",
+    "com.google.android.apps.photos",
+    "com.google.android.apps.docs",
+    "com.squareup.cash",
+    "com.ubercab",
+    "com.supercell.clashroyale"
 ]
 
 # =============================================================================
