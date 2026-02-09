@@ -315,6 +315,91 @@ db.close()
 
 ---
 
+## Design Choices for Downstream Analysis
+
+This schema was designed with specific downstream use cases in mind: sentiment labeling, model training, and business analytics. Here's how each design choice supports these goals.
+
+### 1. Sentiment Analysis & Labeling
+
+**Rating as INTEGER with CHECK constraint**
+- Enforces valid 1-5 range, preventing data quality issues in training data
+- Enables simple sentiment bucketing: `rating >= 4` (positive), `rating = 3` (neutral), `rating <= 2` (negative)
+- The `v_reviews_sentiment` view pre-computes these buckets for labeling workflows
+
+**Content stored as TEXT (not truncated)**
+- Preserves full review text up to Google Play's 500-char limit
+- Allows length-based filtering (`min_length` parameter) to exclude low-signal reviews
+- Analysis showed 39% of reviews are very short (≤3 words) — having full text lets labelers decide inclusion criteria
+
+**Thumbs-up count preserved**
+- Serves as a proxy for review quality/informativeness
+- Negative reviews receive 19x more thumbs-up on average — useful for prioritizing which reviews to label first
+- Enables "helpful review" sampling strategies
+
+### 2. Model Training Data Preparation
+
+**Normalized apps table**
+- Allows stratified sampling by app (e.g., equal samples per app for balanced training)
+- Supports app-aware train/test splits to prevent data leakage
+- Enables filtering by app category (`genre`) for domain-specific models
+
+**Timestamps on both review and scrape time**
+- `review_timestamp`: Enables temporal train/test splits (train on older, test on newer)
+- `scraped_at`: Supports incremental data updates without re-processing
+
+**Developer reply fields**
+- Reply presence correlates with negative sentiment (replied reviews avg 2.93 stars vs 3.84 unreplied)
+- Can be used as a weak supervision signal or excluded to avoid bias
+- Reply text itself could be training data for response generation models
+
+### 3. Efficient Querying for Analysis
+
+**Composite indexes match common query patterns**
+- `idx_reviews_app_rating`: Fast retrieval of "all 1-star WhatsApp reviews"
+- `idx_reviews_app_timestamp`: Efficient time-range queries per app
+- `idx_reviews_has_reply`: Quick filtering for reply-based analysis
+
+**Pre-built views reduce query complexity**
+- `v_app_stats`: One query for per-app summary statistics
+- `v_daily_stats`: Time series analysis without GROUP BY boilerplate
+- `v_reviews_sentiment`: Ready-to-use sentiment labels
+
+**Why denormalized reviews (not separate content/metadata tables)**
+- Most queries need content + rating + timestamp together
+- Avoids JOINs for the most common access pattern
+- Trade-off: ~45MB for 80k reviews is acceptable; would reconsider at 10M+ scale
+
+### 4. Data Quality & Provenance
+
+**Scrape run tracking**
+- `scrape_runs` table records parameters used for each collection
+- Enables reproducibility: "which reviews came from the Jan 15 scrape?"
+- Supports debugging: correlate data quality issues with specific runs
+
+**NULL policy aligned with data reality**
+- `app_version` allows NULL (14% missing in source data)
+- `reply_content` allows NULL (86% of reviews have no reply — this is expected, not an error)
+- Core fields (`rating`, `content`, `author`) are NOT NULL — missing values indicate scraper bugs
+
+### 5. Extensibility for Future Phases
+
+**Schema supports common extensions without migration**
+
+| Future Need | How Schema Supports It |
+|-------------|------------------------|
+| Language detection | `ALTER TABLE reviews ADD COLUMN detected_language TEXT` |
+| Sentiment labels | `ALTER TABLE reviews ADD COLUMN sentiment_label TEXT` |
+| Label confidence | `ALTER TABLE reviews ADD COLUMN label_confidence REAL` |
+| Multiple labelers | New `labels` table with FK to reviews |
+| Model predictions | New `predictions` table with FK to reviews |
+| Embeddings | New `embeddings` table or vector DB integration |
+
+**Junction table pattern established**
+- `review_scrape_log` demonstrates the many-to-many pattern
+- Same pattern applies for `review_labels` (multiple labelers per review)
+
+---
+
 ## Data Characteristics
 
 Based on analysis of 80,000 reviews:
