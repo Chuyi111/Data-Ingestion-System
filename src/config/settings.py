@@ -113,3 +113,19 @@ class SortOrder:
     MOST_RELEVANT = 0  # Default - most relevant reviews
     NEWEST = 1         # Newest reviews first
     RATING = 2         # Sorted by rating
+
+
+# =============================================================================
+# INGESTION SETTINGS
+# =============================================================================
+# Reviews to fetch per app per ingestion run (smaller than bulk scrape)
+INGESTION_REVIEWS_PER_APP: int = 300
+
+# Interval between scheduled runs (seconds). 4 hours = 14400
+INGESTION_INTERVAL_SECONDS: int = 14400
+
+# Database path for ingestion (reuses same DB)
+INGESTION_DB_PATH: str = "data/reviews.db"
+
+# Separate log file for ingestion runs
+INGESTION_LOG_FILE: str = "ingestion.log"

@@ -463,6 +463,48 @@ class DatabaseManager:
     # Database info
     # -------------------------------------------------------------------------
 
+    def get_existing_review_ids(self, review_ids: set) -> set:
+        """
+        Return the subset of review_ids that already exist in the database.
+
+        Batches lookups in chunks of 900 to stay within SQLite's
+        variable limit (999).
+        """
+        conn = self.connect()
+        existing = set()
+        ids_list = list(review_ids)
+
+        for i in range(0, len(ids_list), 900):
+            chunk = ids_list[i:i + 900]
+            placeholders = ",".join("?" * len(chunk))
+            rows = conn.execute(
+                f"SELECT review_id FROM reviews WHERE review_id IN ({placeholders})",
+                chunk
+            ).fetchall()
+            existing.update(row[0] for row in rows)
+
+        return existing
+
+    def log_review_scrape_bulk(self, review_ids: List[str], run_id: int) -> int:
+        """
+        Bulk-insert entries into review_scrape_log linking reviews to a run.
+
+        Uses INSERT OR IGNORE on the composite PK (review_id, run_id).
+
+        Returns:
+            Number of log entries inserted
+        """
+        if not review_ids:
+            return 0
+
+        conn = self.connect()
+        cursor = conn.executemany(
+            "INSERT OR IGNORE INTO review_scrape_log (review_id, run_id) VALUES (?, ?)",
+            [(rid, run_id) for rid in review_ids]
+        )
+        conn.commit()
+        return cursor.rowcount
+
     def get_stats(self) -> Dict[str, Any]:
         """Get overall database statistics."""
         conn = self.connect()
