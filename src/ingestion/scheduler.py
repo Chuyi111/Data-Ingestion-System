@@ -100,12 +100,22 @@ class IngestionScheduler:
         return pipeline.run(self.target_apps)
 
     def _report(self, result: RunResult) -> None:
-        """Report run results and current DB stats."""
+        """Report run results, DB stats, and health metrics."""
         reporter = IngestionReporter(logger=self.logger)
         reporter.report_run(result)
 
         db = DatabaseManager(self.db_path)
+        db.init_schema()  # ensures ingestion_metrics table exists
         reporter.report_db_growth(db)
+
+        # Health monitoring
+        from src.ingestion.monitor import IngestionMonitor
+
+        monitor = IngestionMonitor(db=db, logger=self.logger)
+        health_report = monitor.evaluate_run(result)
+        monitor.store_report(health_report)
+        monitor.print_alerts(health_report)
+
         db.close()
 
     def _interruptible_sleep(self, seconds: int) -> None:

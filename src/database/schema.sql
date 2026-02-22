@@ -118,6 +118,41 @@ CREATE TABLE IF NOT EXISTS review_scrape_log (
 );
 
 -- ============================================================================
+-- INGESTION_METRICS TABLE
+-- ============================================================================
+-- Stores structured monitoring data for each ingestion run.
+-- Key metrics denormalized as columns for fast SQL queries;
+-- full health report kept as JSON for detailed analysis.
+
+CREATE TABLE IF NOT EXISTS ingestion_metrics (
+    run_id                  INTEGER PRIMARY KEY,
+    report_json             TEXT NOT NULL,
+
+    -- Performance metrics
+    reviews_inserted        INTEGER NOT NULL,
+    reviews_fetched         INTEGER NOT NULL,
+    reviews_skipped         INTEGER NOT NULL,
+    dedup_rate              REAL NOT NULL,
+    error_rate              REAL NOT NULL,
+    duration_seconds        REAL NOT NULL,
+    ingestion_rate_per_min  REAL NOT NULL,
+    apps_processed          INTEGER NOT NULL,
+    apps_failed             INTEGER NOT NULL,
+
+    -- Data quality metrics
+    app_version_null_rate   REAL NOT NULL,
+    reply_content_null_rate REAL NOT NULL,
+    empty_content_rate      REAL NOT NULL,
+
+    -- Alert summary
+    alerts_count            INTEGER DEFAULT 0,
+
+    created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (run_id) REFERENCES scrape_runs(run_id) ON DELETE CASCADE
+);
+
+-- ============================================================================
 -- INDEXES
 -- ============================================================================
 -- Designed for common query patterns identified during analysis:
