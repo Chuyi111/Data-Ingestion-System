@@ -359,7 +359,7 @@
     <hr class="divider" style="max-width:400px;">
     <p style="font-size:14px; margin-top:16px;">
       A production-grade data pipeline that collects, stores, monitors, and analyzes
-      app reviews at scale &mdash; designed as the foundation for downstream
+      app reviews at scale, designed as the foundation for downstream
       sentiment labeling and model training.
     </p>
     <div style="margin-top:40px; display:flex; gap:48px;">
@@ -738,7 +738,7 @@ Run #4: 20 apps, 300 reviews each
       <div class="card mt-16">
         <h3 style="color:var(--yellow);">Dedup Rate Behavior</h3>
         <p>Run #3 (first run): <strong>8.3%</strong> dedup (mostly new data).<br>
-        Run #4 (1 hour later): significantly higher dedup because most "newest 300" reviews per app were already collected. This is expected and healthy &mdash; the monitor flags it only if it exceeds 99.5%.</p>
+        Run #4 (1 hour later): significantly higher dedup because most "newest 300" reviews per app were already collected. This is expected and healthy since the monitor flags it only if it exceeds 99.5%.</p>
       </div>
       <div class="card mt-16">
         <h3 style="color:var(--green);">DB Snapshot After Run #3</h3>
@@ -1045,7 +1045,7 @@ $ python -m src.ingestion.cli <span class="accent">--health-history 10</span></d
       <div class="card mt-16" style="border-left: 3px solid var(--accent2);">
         <h3 style="color:var(--accent2);">Why Views Matter for Phase 3</h3>
         <p>These views provide ready-made query patterns for the labeling interface.
-        <code>v_reviews_sentiment</code> maps directly to the labeling task &mdash;
+        <code>v_reviews_sentiment</code> maps directly to the labeling task,
         surface long negative reviews first for annotation, since they carry the
         most signal for model training.</p>
       </div>
@@ -1067,7 +1067,7 @@ $ python -m src.ingestion.cli <span class="accent">--health-history 10</span></d
     </div>
     <div class="card" style="border-left: 3px solid var(--green);">
       <h3 style="color:var(--green);">Dedup at Insert Time, Not Fetch Time</h3>
-      <p><strong>Why:</strong> The Google Play API returns reviews sorted by "newest" &mdash; fetching 300 per app every 4 hours means significant overlap.
+      <p><strong>Why:</strong> The Google Play API returns reviews sorted by newest, fetching 300 per app every 4 hours means significant overlap.
       <strong>Trade-off:</strong> We fetch data we already have (wasted API calls).
       <strong>Rationale:</strong> It's simpler and safer than trying to track "last fetched timestamp" per app, which is fragile.</p>
     </div>
@@ -1215,7 +1215,7 @@ $ python -m src.ingestion.cli <span class="accent">--health-history 10</span></d
       <div class="card mt-16" style="text-align:center; background: linear-gradient(135deg, rgba(108,140,255,0.08), rgba(167,139,250,0.08));">
         <p style="font-size:15px; color:var(--text);">
           The ingestion system is designed to keep growing the dataset
-          while Phase 3 work proceeds in parallel &mdash; every 4 hours,
+          while Phase 3 work proceeds in parallel, every 4 hours,
           new reviews flow in automatically.
         </p>
       </div>
