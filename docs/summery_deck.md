@@ -2,7 +2,7 @@
 
 **Sciencia AI** | Google Play Review Pipeline for Sentiment Analytics
 
-A production-grade data pipeline that collects, stores, monitors, and analyzes app reviews at scale -- designed as the foundation for downstream sentiment labeling and model training.
+A production-grade data pipeline that collects, stores, monitors, and analyzes app reviews at scale, designed as the foundation for downstream sentiment labeling and model training.
 
 | Reviews Collected | Apps Monitored | Python Modules | Lines of Code |
 |:-----------------:|:--------------:|:--------------:|:-------------:|
@@ -200,7 +200,7 @@ Run #4: 20 apps, 300 reviews each
     ...
 ```
 
-> **Dedup Rate Behavior:** Run #3 (first run): **8.3%** dedup (mostly new data). Run #4 (1 hour later): significantly higher dedup because most "newest 300" reviews per app were already collected. This is expected and healthy -- the monitor flags it only if it exceeds 99.5%.
+> **Dedup Rate Behavior:** Run #3 (first run): **8.3%** dedup (mostly new data). Run #4 (1 hour later): significantly higher dedup because most "newest 300" reviews per app were already collected. This is expected and healthy since the monitor flags it only if it exceeds 99.5%.
 
 ### DB Snapshot After Run #3
 
@@ -411,7 +411,7 @@ WHERE app_genre = 'Communication'
 
 ### Dedup at Insert Time, Not Fetch Time
 
-**Why:** The Google Play API returns reviews sorted by "newest" -- fetching 300 per app every 4 hours means significant overlap.
+**Why:** The Google Play API returns reviews sorted by newest, fetching 300 per app every 4 hours means significant overlap.
 **Trade-off:** We fetch data we already have (wasted API calls).
 **Rationale:** It's simpler and safer than trying to track "last fetched timestamp" per app, which is fragile.
 
@@ -497,4 +497,4 @@ Implement model evaluation with per-app breakdowns. Compare model predictions ag
 | Continuous ingestion | Running | Fresh training data |
 | Monitoring + alerting | Running | Data drift detection |
 
-The ingestion system is designed to keep growing the dataset while Phase 3 work proceeds in parallel -- every 4 hours, new reviews flow in automatically.
+The ingestion system is designed to keep growing the dataset while Phase 3 work proceeds in parallel, every 4 hours, new reviews flow in automatically.
