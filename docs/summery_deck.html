@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Ingestion System - Summary Deck</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #232733;
+    --border: #2e3345;
+    --text: #e4e7ef;
+    --text-dim: #8b90a0;
+    --accent: #6c8cff;
+    --accent2: #a78bfa;
+    --green: #4ade80;
+    --yellow: #fbbf24;
+    --red: #f87171;
+    --orange: #fb923c;
+    --cyan: #22d3ee;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  .slide {
+    display: none;
+    width: 100vw;
+    height: 100vh;
+    padding: 48px 72px;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    animation: fadeIn 0.3s ease;
+  }
+  .slide.active { display: flex; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Navigation */
+  .nav {
+    position: fixed;
+    bottom: 24px;
+    right: 36px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 100;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .nav button {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    transition: all 0.15s;
+  }
+  .nav button:hover { background: var(--surface2); border-color: var(--accent); }
+
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.3s ease;
+    z-index: 100;
+  }
+
+  /* Typography */
+  h1 { font-size: 42px; font-weight: 700; line-height: 1.2; margin-bottom: 16px; }
+  h2 { font-size: 32px; font-weight: 600; line-height: 1.3; margin-bottom: 20px; color: var(--accent); }
+  h3 { font-size: 20px; font-weight: 600; margin-bottom: 12px; }
+  p { font-size: 17px; line-height: 1.7; color: var(--text-dim); max-width: 800px; }
+  .subtitle { font-size: 20px; color: var(--text-dim); font-weight: 300; margin-bottom: 32px; }
+
+  .tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+  }
+  .tag-blue { background: rgba(108,140,255,0.15); color: var(--accent); }
+  .tag-green { background: rgba(74,222,128,0.15); color: var(--green); }
+  .tag-yellow { background: rgba(251,191,36,0.15); color: var(--yellow); }
+  .tag-purple { background: rgba(167,139,250,0.15); color: var(--accent2); }
+  .tag-red { background: rgba(248,113,113,0.15); color: var(--red); }
+
+  /* Layout helpers */
+  .cols { display: flex; gap: 32px; align-items: flex-start; }
+  .col { flex: 1; }
+  .cols-60-40 > :first-child { flex: 3; }
+  .cols-60-40 > :last-child { flex: 2; }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+  }
+  .card h3 { font-size: 15px; margin-bottom: 8px; }
+  .card p { font-size: 14px; line-height: 1.6; }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    text-align: center;
+  }
+  .stat-card .number {
+    font-size: 36px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .stat-card .label {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  /* Code block */
+  .code-block {
+    background: #0d0f14;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    overflow-x: auto;
+    white-space: pre;
+    color: var(--text-dim);
+  }
+  .code-block .keyword { color: var(--accent2); }
+  .code-block .string { color: var(--green); }
+  .code-block .comment { color: #555b70; font-style: italic; }
+  .code-block .type { color: var(--cyan); }
+  .code-block .num { color: var(--orange); }
+  .code-block .accent { color: var(--accent); }
+  .code-block .dim { color: #555b70; }
+  .code-block .warn { color: var(--yellow); }
+  .code-block .err { color: var(--red); }
+  .code-block .ok { color: var(--green); }
+
+  /* Log block */
+  .log-block {
+    background: #0a0c10;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    line-height: 1.65;
+    overflow-x: auto;
+    white-space: pre;
+    color: var(--text-dim);
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  /* Table */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  th {
+    background: var(--surface2);
+    text-align: left;
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 9px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  tr:last-child td { border-bottom: none; }
+
+  /* Diagram boxes */
+  .arch-diagram {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    margin: 24px 0;
+  }
+  .arch-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 24px;
+    text-align: center;
+    min-width: 140px;
+  }
+  .arch-box.highlight {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px rgba(108,140,255,0.1);
+  }
+  .arch-box .box-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .arch-box .box-sub { font-size: 11px; color: var(--text-dim); }
+  .arch-arrow {
+    font-size: 24px;
+    color: var(--accent);
+    margin: 0 12px;
+    font-weight: 300;
+  }
+
+  /* Bullet list */
+  ul.bullets {
+    list-style: none;
+    padding: 0;
+  }
+  ul.bullets li {
+    position: relative;
+    padding-left: 20px;
+    margin-bottom: 10px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+  ul.bullets li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 9px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+  ul.bullets li strong { color: var(--text); font-weight: 500; }
+
+  /* Bar chart */
+  .bar-chart { margin: 16px 0; }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .bar-label { width: 50px; text-align: right; margin-right: 12px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+  .bar-track { flex: 1; height: 22px; background: var(--surface2); border-radius: 4px; overflow: hidden; position: relative; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+  .bar-value { width: 60px; text-align: right; margin-left: 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-dim); }
+
+  /* Phase timeline */
+  .timeline {
+    display: flex;
+    gap: 0;
+    margin: 24px 0;
+  }
+  .phase {
+    flex: 1;
+    padding: 20px;
+    border-top: 3px solid var(--border);
+    position: relative;
+  }
+  .phase.done { border-top-color: var(--green); }
+  .phase.current { border-top-color: var(--accent); }
+  .phase.future { border-top-color: var(--border); }
+  .phase .phase-num {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .phase.done .phase-num { color: var(--green); }
+  .phase.current .phase-num { color: var(--accent); }
+  .phase.future .phase-num { color: var(--text-dim); }
+  .phase .phase-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .phase .phase-desc { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+
+  /* Misc */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+  .small { font-size: 13px; color: var(--text-dim); }
+  .mt-8 { margin-top: 8px; }
+  .mt-16 { margin-top: 16px; }
+  .mt-24 { margin-top: 24px; }
+  .mb-16 { margin-bottom: 16px; }
+
+  .highlight-text { color: var(--accent); font-weight: 500; }
+  .green-text { color: var(--green); }
+  .yellow-text { color: var(--yellow); }
+  .red-text { color: var(--red); }
+
+  /* Slide label */
+  .slide-label {
+    position: absolute;
+    top: 24px;
+    right: 36px;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- ===== SLIDE 1: TITLE ===== -->
+<div class="slide active" id="slide-1">
+  <div>
+    <span class="tag tag-blue">Sciencia AI</span>
+    <h1 style="font-size:52px;">Data Ingestion System</h1>
+    <p class="subtitle">Google Play Review Pipeline for Sentiment Analytics</p>
+    <hr class="divider" style="max-width:400px;">
+    <p style="font-size:14px; margin-top:16px;">
+      A production-grade data pipeline that collects, stores, monitors, and analyzes
+      app reviews at scale &mdash; designed as the foundation for downstream
+      sentiment labeling and model training.
+    </p>
+    <div style="margin-top:40px; display:flex; gap:48px;">
+      <div>
+        <div style="font-size:12px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px;">Reviews Collected</div>
+        <div style="font-size:28px; font-weight:700; color:var(--accent);">87,000+</div>
+      </div>
+      <div>
+        <div style="font-size:12px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px;">Apps Monitored</div>
+        <div style="font-size:28px; font-weight:700; color:var(--accent);">20</div>
+      </div>
+      <div>
+        <div style="font-size:12px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px;">Python Modules</div>
+        <div style="font-size:28px; font-weight:700; color:var(--accent);">25</div>
+      </div>
+      <div>
+        <div style="font-size:12px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px;">Lines of Code</div>
+        <div style="font-size:28px; font-weight:700; color:var(--accent);">4,500+</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 2: PROBLEM STATEMENT ===== -->
+<div class="slide" id="slide-2">
+  <span class="slide-label">Problem</span>
+  <span class="tag tag-red">The Challenge</span>
+  <h2>Why Build This?</h2>
+  <div class="cols cols-60-40">
+    <div>
+      <p style="font-size:16px; margin-bottom:24px;">
+        Sciencia AI needs a reliable way to collect and manage large volumes of user reviews
+        to power sentiment analytics. Without a structured pipeline, data collection is manual,
+        inconsistent, and impossible to scale.
+      </p>
+      <ul class="bullets">
+        <li><strong>No existing dataset</strong> &mdash; needed to build a curated review corpus from scratch</li>
+        <li><strong>Scale matters</strong> &mdash; sentiment models require tens of thousands of labeled examples</li>
+        <li><strong>Data freshness</strong> &mdash; reviews change daily; need continuous ingestion, not one-off scrapes</li>
+        <li><strong>Quality control</strong> &mdash; raw reviews are noisy (39% low-signal), need monitoring</li>
+        <li><strong>Audit trail</strong> &mdash; must know exactly when and how each review was collected</li>
+      </ul>
+    </div>
+    <div>
+      <div class="card" style="border-left: 3px solid var(--accent);">
+        <h3 style="color:var(--accent);">End Goal</h3>
+        <p>A fully automated pipeline: <strong>collect</strong> real user reviews, <strong>store</strong> them in a queryable database, <strong>monitor</strong> data health, and feed clean data into a <strong>sentiment labeling</strong> and <strong>model training</strong> workflow.</p>
+      </div>
+      <div class="card mt-16" style="border-left: 3px solid var(--accent2);">
+        <h3 style="color:var(--accent2);">This Deck Covers</h3>
+        <p>Phases 0-2 of the project: data source research, scraper development, database design, ingestion automation, and monitoring.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 3: PROJECT SCOPE ===== -->
+<div class="slide" id="slide-3">
+  <span class="slide-label">Scope</span>
+  <span class="tag tag-purple">Project Roadmap</span>
+  <h2>Phased Approach</h2>
+  <div class="timeline">
+    <div class="phase done">
+      <div class="phase-num">Phase 0 &mdash; Complete</div>
+      <div class="phase-title">Data Source Research</div>
+      <div class="phase-desc">
+        Evaluated 5+ data sources (Twitter/X, Reddit, Amazon, Yelp, Google Play).
+        Selected Google Play reviews based on access, volume, structure, and sentiment signal quality.
+      </div>
+    </div>
+    <div class="phase done">
+      <div class="phase-num">Phase 1 &mdash; Complete</div>
+      <div class="phase-title">Core Infrastructure</div>
+      <div class="phase-desc">
+        Built the scraper, database schema, data models, file storage, and CLI tools.
+        Collected 80k reviews from 20 major apps. Ran data quality analysis.
+      </div>
+    </div>
+    <div class="phase done">
+      <div class="phase-num">Phase 2 &mdash; Complete</div>
+      <div class="phase-title">Live Pipeline & Monitoring</div>
+      <div class="phase-desc">
+        Built the automated ingestion pipeline, scheduler, reporter, and self-monitoring layer
+        with anomaly detection. Grew dataset to 87k+ reviews.
+      </div>
+    </div>
+    <div class="phase future">
+      <div class="phase-num">Phase 3 &mdash; Next</div>
+      <div class="phase-title">Labeling & Training</div>
+      <div class="phase-desc">
+        Build a labeling interface for sentiment annotation, create training/eval splits,
+        train and evaluate sentiment models.
+      </div>
+    </div>
+  </div>
+  <hr class="divider">
+  <p style="font-size:14px;">
+    Each phase was designed to be self-contained and testable before moving to the next.
+    The data source analysis (Phase 0) informed every downstream design decision.
+  </p>
+</div>
+
+<!-- ===== SLIDE 4: DATA SOURCE ANALYSIS ===== -->
+<div class="slide" id="slide-4">
+  <span class="slide-label">Research</span>
+  <span class="tag tag-green">Phase 0</span>
+  <h2>Data Source Analysis</h2>
+  <p class="mb-16" style="font-size:15px;">Before writing any code, we evaluated multiple data sources against criteria critical for sentiment model training.</p>
+  <div class="table-wrap">
+    <table>
+      <tr>
+        <th>Source</th>
+        <th>Access</th>
+        <th>Volume</th>
+        <th>Structure</th>
+        <th>Sentiment Signal</th>
+        <th>Verdict</th>
+      </tr>
+      <tr>
+        <td><strong>Google Play</strong></td>
+        <td><span class="green-text">Free library</span></td>
+        <td><span class="green-text">Millions</span></td>
+        <td><span class="green-text">Star rating + text</span></td>
+        <td><span class="green-text">Strong (1-5 scale)</span></td>
+        <td><span class="green-text" style="font-weight:600;">Selected</span></td>
+      </tr>
+      <tr>
+        <td>Twitter / X</td>
+        <td><span class="red-text">Paid API ($100+/mo)</span></td>
+        <td><span class="green-text">High</span></td>
+        <td><span class="yellow-text">Unstructured</span></td>
+        <td><span class="yellow-text">No built-in labels</span></td>
+        <td><span class="red-text">Rejected</span></td>
+      </tr>
+      <tr>
+        <td>Reddit</td>
+        <td><span class="yellow-text">Rate-limited API</span></td>
+        <td><span class="green-text">High</span></td>
+        <td><span class="yellow-text">Upvotes only</span></td>
+        <td><span class="yellow-text">No sentiment scale</span></td>
+        <td><span class="yellow-text">Considered</span></td>
+      </tr>
+      <tr>
+        <td>Amazon Reviews</td>
+        <td><span class="red-text">No public API</span></td>
+        <td><span class="green-text">Billions</span></td>
+        <td><span class="green-text">Star + text</span></td>
+        <td><span class="green-text">Strong</span></td>
+        <td><span class="yellow-text">Access barrier</span></td>
+      </tr>
+      <tr>
+        <td>Yelp</td>
+        <td><span class="yellow-text">Limited API</span></td>
+        <td><span class="yellow-text">Domain-specific</span></td>
+        <td><span class="green-text">Star + text</span></td>
+        <td><span class="green-text">Strong</span></td>
+        <td><span class="yellow-text">Too narrow</span></td>
+      </tr>
+    </table>
+  </div>
+  <div class="card mt-16" style="border-left: 3px solid var(--green);">
+    <h3 style="color:var(--green);">Why Google Play Won</h3>
+    <p>Free access via <code>google-play-scraper</code> library. Built-in 1-5 star ratings serve as natural sentiment labels. Diverse app categories provide cross-domain coverage. High volume ensures enough data for model training.</p>
+  </div>
+</div>
+
+<!-- ===== SLIDE 5: ARCHITECTURE ===== -->
+<div class="slide" id="slide-5">
+  <span class="slide-label">Architecture</span>
+  <span class="tag tag-blue">System Design</span>
+  <h2>High-Level Architecture</h2>
+
+  <div class="arch-diagram">
+    <div class="arch-box">
+      <div class="box-title" style="color:var(--cyan);">Google Play</div>
+      <div class="box-sub">Reviews API</div>
+    </div>
+    <div class="arch-arrow">&rarr;</div>
+    <div class="arch-box highlight">
+      <div class="box-title">Scraper</div>
+      <div class="box-sub">Rate limiter + Backoff</div>
+    </div>
+    <div class="arch-arrow">&rarr;</div>
+    <div class="arch-box highlight">
+      <div class="box-title">Pipeline</div>
+      <div class="box-sub">Dedup + Insert</div>
+    </div>
+    <div class="arch-arrow">&rarr;</div>
+    <div class="arch-box highlight">
+      <div class="box-title">SQLite DB</div>
+      <div class="box-sub">5 tables, 9 indexes</div>
+    </div>
+    <div class="arch-arrow">&rarr;</div>
+    <div class="arch-box">
+      <div class="box-title" style="color:var(--green);">Monitor</div>
+      <div class="box-sub">Anomaly detection</div>
+    </div>
+  </div>
+
+  <div class="grid-3 mt-24">
+    <div class="card">
+      <h3 style="color:var(--cyan);">Scraper Layer</h3>
+      <p><code>google_play_scraper.py</code> + <code>rate_limiter.py</code> handle API interaction with configurable jitter (1-3s), exponential backoff (3 retries), and batch pagination (200/batch).</p>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--accent);">Ingestion Layer</h3>
+      <p><code>pipeline.py</code> + <code>scheduler.py</code> wire scraping to storage. Runs every 4 hours, 300 reviews/app/run. Handles dedup, atomic run tracking, graceful shutdown (SIGINT/SIGTERM).</p>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--green);">Monitoring Layer</h3>
+      <p><code>monitor.py</code> evaluates each run: dedup rate, error rate, null rate drift, duration spikes. Stores JSON health reports. Alerts on 6 anomaly types with configurable thresholds.</p>
+    </div>
+  </div>
+
+  <div class="code-block mt-24" style="font-size:12px;">
+<span class="comment"># Module structure (4,500+ lines of Python across 25 files)</span>
+src/
+  config/settings.py       <span class="dim"># Central configuration</span>
+  scraper/                 <span class="dim"># API interaction + rate limiting</span>
+  models/review.py         <span class="dim"># Review & AppInfo dataclasses</span>
+  database/                <span class="dim"># Schema, DB manager, CLI</span>
+  storage/file_storage.py  <span class="dim"># JSON/CSV export + checkpointing</span>
+  ingestion/               <span class="dim"># Pipeline, scheduler, monitor, reporter</span>
+  analysis/                <span class="dim"># Data quality + deep statistical analysis</span>
+  utils/logger.py          <span class="dim"># Structured logging (file + console)</span></div>
+</div>
+
+<!-- ===== SLIDE 6: DATABASE SCHEMA ===== -->
+<div class="slide" id="slide-6">
+  <span class="slide-label">Storage</span>
+  <span class="tag tag-blue">Database Design</span>
+  <h2>Schema Design</h2>
+  <div class="cols" style="gap:24px;">
+    <div style="flex:3;">
+      <div class="code-block" style="font-size:11.5px;">
+<span class="comment">-- 5 tables, 9 indexes, 4 views</span>
+
+<span class="keyword">CREATE TABLE</span> <span class="type">apps</span> (
+    app_id          <span class="accent">TEXT PRIMARY KEY</span>,     <span class="comment">-- e.g. 'com.whatsapp'</span>
+    title           TEXT NOT NULL,
+    developer       TEXT,
+    genre           TEXT,
+    play_store_rating   REAL,
+    play_store_reviews  INTEGER,
+    installs            TEXT,
+    first_scraped_at    TIMESTAMP,
+    last_scraped_at     TIMESTAMP
+);
+
+<span class="keyword">CREATE TABLE</span> <span class="type">reviews</span> (
+    review_id       <span class="accent">TEXT PRIMARY KEY</span>,     <span class="comment">-- Google Play unique ID</span>
+    app_id          TEXT NOT NULL <span class="accent">REFERENCES apps</span>,
+    author          TEXT NOT NULL,
+    rating          INTEGER <span class="accent">CHECK (1-5)</span>,
+    content         TEXT NOT NULL,
+    review_timestamp    TIMESTAMP,
+    scraped_at          TIMESTAMP,
+    thumbs_up       INTEGER DEFAULT 0,
+    app_version     TEXT,               <span class="comment">-- ~14% NULL</span>
+    reply_content   TEXT,               <span class="comment">-- ~86% NULL</span>
+    reply_timestamp TIMESTAMP
+);
+
+<span class="keyword">CREATE TABLE</span> <span class="type">scrape_runs</span>      <span class="comment">-- Audit trail: every collection session</span>
+<span class="keyword">CREATE TABLE</span> <span class="type">review_scrape_log</span> <span class="comment">-- Junction: which run collected which review</span>
+<span class="keyword">CREATE TABLE</span> <span class="type">ingestion_metrics</span> <span class="comment">-- Monitoring: health report per run</span></div>
+    </div>
+    <div style="flex:2;">
+      <div class="card mb-16">
+        <h3 style="color:var(--accent);">Design Principles</h3>
+        <ul class="bullets">
+          <li><strong>Normalize apps</strong> &mdash; avoids repeating metadata across 87k rows</li>
+          <li><strong>Denormalize reviews</strong> &mdash; all fields needed for analysis in one table</li>
+          <li><strong>Audit everything</strong> &mdash; scrape_runs + review_scrape_log track provenance</li>
+          <li><strong>Index for queries</strong> &mdash; 9 indexes covering app, rating, time, reply patterns</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3 style="color:var(--accent2);">Pre-built Views</h3>
+        <ul class="bullets">
+          <li><strong>v_reviews_with_app</strong> &mdash; joined review + app metadata</li>
+          <li><strong>v_reviews_sentiment</strong> &mdash; buckets: positive / neutral / negative</li>
+          <li><strong>v_app_stats</strong> &mdash; per-app aggregates</li>
+          <li><strong>v_daily_stats</strong> &mdash; daily volume and rating trends</li>
+        </ul>
+      </div>
+      <div class="card mt-16" style="text-align:center;">
+        <div style="font-size:28px; font-weight:700; color:var(--accent);">45.9 MB</div>
+        <div class="small">SQLite database file</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 7: INGESTION FLOW ===== -->
+<div class="slide" id="slide-7">
+  <span class="slide-label">Pipeline</span>
+  <span class="tag tag-green">Ingestion Flow</span>
+  <h2>Scrape &rarr; Deduplicate &rarr; Store &rarr; Monitor</h2>
+
+  <div class="arch-diagram" style="margin:20px 0;">
+    <div class="arch-box">
+      <div class="box-title">Scheduler</div>
+      <div class="box-sub">Every 4 hours</div>
+    </div>
+    <div class="arch-arrow">&rarr;</div>
+    <div class="arch-box">
+      <div class="box-title">Fetch App Info</div>
+      <div class="box-sub">20 apps</div>
+    </div>
+    <div class="arch-arrow">&rarr;</div>
+    <div class="arch-box">
+      <div class="box-title">Fetch Reviews</div>
+      <div class="box-sub">300/app</div>
+    </div>
+    <div class="arch-arrow">&rarr;</div>
+    <div class="arch-box highlight">
+      <div class="box-title">Deduplicate</div>
+      <div class="box-sub">Check existing IDs</div>
+    </div>
+    <div class="arch-arrow">&rarr;</div>
+    <div class="arch-box">
+      <div class="box-title">Bulk Insert</div>
+      <div class="box-sub">New reviews only</div>
+    </div>
+    <div class="arch-arrow">&rarr;</div>
+    <div class="arch-box">
+      <div class="box-title">Log + Report</div>
+      <div class="box-sub">Audit trail</div>
+    </div>
+  </div>
+
+  <div class="grid-2 mt-16">
+    <div>
+      <h3 style="color:var(--text-dim); font-size:12px; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">Run #3 &mdash; Full 20-app Ingestion (actual log output)</h3>
+      <div class="log-block" style="font-size:10.5px; max-height:320px;">
+==================================================================
+  INGESTION RUN #3  |  2026-02-11 14:40:28
+==================================================================
+  Status   : <span class="ok">completed</span>
+  Duration : 9m 2s
+  Apps     : 20 processed
+
+  Per-app breakdown:
+  App                                 Fetched   New   Skip    Time
+  ------------------------------------------------------------------
+  WhatsApp Messenger                      400   350     50   17.8s
+  Instagram                               400   400      0   21.5s
+  TikTok - Videos, Shop & LIVE            400   399      1   18.4s
+  Google Chrome                           400   393      7   17.8s
+  Gmail                                   400   391      9   24.4s
+  YouTube                                 400   398      2   50.6s
+  Facebook                                400   400      0   20.4s
+  Spotify: Music and Podcasts             400   399      1   19.2s
+  Snapchat                                400   398      2   24.1s
+  Discord                                 400   397      3   20.2s
+  <span class="dim">  ... 10 more apps ...</span>
+
+  Totals:
+    Reviews fetched    : <span class="accent">8,000</span>
+    New (inserted)     : <span class="ok">7,336</span>
+    Duplicates skipped : 664
+    Dedup rate         : <span class="warn">8.3%</span>
+==================================================================</div>
+    </div>
+    <div>
+      <h3 style="color:var(--text-dim); font-size:12px; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">Run #4 &mdash; Same apps, 1 hour later (dedup in action)</h3>
+      <div class="log-block" style="font-size:10.5px; max-height:180px;">
+Run #4: 20 apps, 300 reviews each
+  com.whatsapp              fetched=400  new=245  skipped=155
+  com.instagram.android     fetched=400  new=110  skipped=290
+  com.zhiliaoapp.musically  fetched=400  new=19   skipped=381
+  com.android.chrome        fetched=400  new=18   skipped=382
+  com.google.android.gm     fetched=400  new=10   skipped=390
+  <span class="dim">  ...</span></div>
+      <div class="card mt-16">
+        <h3 style="color:var(--yellow);">Dedup Rate Behavior</h3>
+        <p>Run #3 (first run): <strong>8.3%</strong> dedup (mostly new data).<br>
+        Run #4 (1 hour later): significantly higher dedup because most "newest 300" reviews per app were already collected. This is expected and healthy &mdash; the monitor flags it only if it exceeds 99.5%.</p>
+      </div>
+      <div class="card mt-16">
+        <h3 style="color:var(--green);">DB Snapshot After Run #3</h3>
+        <div class="code-block" style="font-size:11px; padding:12px;">
+Total reviews  : <span class="num">87,381</span>
+Total apps     : <span class="num">20</span>
+Avg rating     : <span class="num">3.7</span>
+Date range     : 2025-10-27 .. 2026-02-10
+DB file size   : <span class="num">50.82 MB</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 8: MONITORING ===== -->
+<div class="slide" id="slide-8">
+  <span class="slide-label">Monitoring</span>
+  <span class="tag tag-yellow">Observability</span>
+  <h2>Self-Monitoring & Anomaly Detection</h2>
+  <p class="mb-16" style="font-size:15px;">Every ingestion run automatically triggers a health evaluation that computes metrics, compares against historical baselines, and flags anomalies.</p>
+
+  <div class="cols" style="gap:24px;">
+    <div style="flex:1;">
+      <div class="code-block" style="font-size:11px;">
+Scheduler loop
+  <span class="accent">&rarr;</span> Pipeline.run()            <span class="comment"># scrape + insert</span>
+  <span class="accent">&rarr;</span> Reporter.report_run()     <span class="comment"># console output</span>
+  <span class="accent">&rarr;</span> Monitor.evaluate_run()    <span class="comment"># health analysis</span>
+        <span class="ok">&rarr;</span> compute metrics        <span class="comment"># dedup, error, null rates</span>
+        <span class="ok">&rarr;</span> compute deltas         <span class="comment"># vs previous, vs last-5 avg</span>
+        <span class="ok">&rarr;</span> detect anomalies       <span class="comment"># threshold + z-score checks</span>
+        <span class="ok">&rarr;</span> store report           <span class="comment"># JSON &rarr; ingestion_metrics table</span>
+        <span class="ok">&rarr;</span> print alerts           <span class="comment"># console + log file</span></div>
+
+      <div class="table-wrap mt-16">
+        <table style="font-size:12px;">
+          <tr>
+            <th>Anomaly Check</th>
+            <th>Threshold</th>
+            <th>Level</th>
+          </tr>
+          <tr>
+            <td>Insert count drops &gt;50% vs avg</td>
+            <td style="font-family:'JetBrains Mono',monospace;">50%</td>
+            <td><span class="yellow-text">WARNING</span></td>
+          </tr>
+          <tr>
+            <td>Dedup rate &gt;99.5% (stale API)</td>
+            <td style="font-family:'JetBrains Mono',monospace;">99.5%</td>
+            <td><span class="yellow-text">WARNING</span></td>
+          </tr>
+          <tr>
+            <td>Duration &gt;2x recent average</td>
+            <td style="font-family:'JetBrains Mono',monospace;">2.0x</td>
+            <td><span class="yellow-text">WARNING</span></td>
+          </tr>
+          <tr>
+            <td>Any app failure</td>
+            <td style="font-family:'JetBrains Mono',monospace;">0%</td>
+            <td><span class="yellow-text">WARNING</span></td>
+          </tr>
+          <tr>
+            <td>Null rate shifted &gt;5pp</td>
+            <td style="font-family:'JetBrains Mono',monospace;">5.0pp</td>
+            <td>INFO</td>
+          </tr>
+          <tr>
+            <td>Z-score &gt;2.0 std devs</td>
+            <td style="font-family:'JetBrains Mono',monospace;">2.0&sigma;</td>
+            <td>INFO</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+    <div style="flex:1;">
+      <h3 style="color:var(--text-dim); font-size:12px; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;">Sample Health Report (CLI output)</h3>
+      <div class="log-block" style="font-size:10.5px; max-height:440px;">
+======================================================================
+  HEALTH REPORT - Run #3  |  2026-02-11 14:49:31
+  Status: <span class="ok">completed</span>
+======================================================================
+
+  Performance:
+    Reviews inserted     : <span class="accent">7,336</span>
+    Reviews fetched      : 8,000
+    Dedup rate           : <span class="ok">8.3%</span>
+    Error rate           : <span class="ok">0.0%</span>
+    Duration             : 542s
+    Ingestion rate       : 885 reviews/min
+    Apps                 : 20 ok, 0 failed
+
+  Data Quality:
+    app_version null     : 13.8%  (baseline 14.0%, shift -0.2pp)
+    reply_content null   : 91.2%  (baseline 86.3%, shift +4.9pp)
+    empty content        : 0.3%
+    avg content length   : 65 chars  (baseline 68)
+
+  Delta vs Previous Run:
+    reviews_inserted     :     7336  (was 50, <span class="warn">+14572.0%</span>)
+    duration             :      542  (was 21, +2527.1%)
+
+  Alerts: <span class="ok">None</span>
+
+======================================================================</div>
+      <div class="card mt-16">
+        <h3>Query Metrics Directly</h3>
+        <div class="code-block" style="font-size:11px; padding:12px;">
+<span class="comment">-- Runs with anomalies</span>
+<span class="keyword">SELECT</span> run_id, alerts_count, dedup_rate
+<span class="keyword">FROM</span> ingestion_metrics <span class="keyword">WHERE</span> alerts_count > <span class="num">0</span>;
+
+<span class="comment">-- Dedup rate trend over time</span>
+<span class="keyword">SELECT</span> run_id, dedup_rate, duration_seconds
+<span class="keyword">FROM</span> ingestion_metrics <span class="keyword">ORDER BY</span> run_id;</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 9: DATA COLLECTED ===== -->
+<div class="slide" id="slide-9">
+  <span class="slide-label">Data</span>
+  <span class="tag tag-green">Collection Results</span>
+  <h2>What We Collected</h2>
+
+  <div style="display:flex; gap:16px; margin-bottom:24px;">
+    <div class="stat-card" style="flex:1;">
+      <div class="number">87,381</div>
+      <div class="label">Total Reviews</div>
+    </div>
+    <div class="stat-card" style="flex:1;">
+      <div class="number">20</div>
+      <div class="label">App Categories</div>
+    </div>
+    <div class="stat-card" style="flex:1;">
+      <div class="number">3.71</div>
+      <div class="label">Avg Rating</div>
+    </div>
+    <div class="stat-card" style="flex:1;">
+      <div class="number">13.7%</div>
+      <div class="label">Dev Reply Rate</div>
+    </div>
+    <div class="stat-card" style="flex:1;">
+      <div class="number">67.7</div>
+      <div class="label">Avg Chars / Review</div>
+    </div>
+  </div>
+
+  <div class="cols" style="gap:24px;">
+    <div style="flex:1;">
+      <h3 style="font-size:14px; color:var(--text-dim); margin-bottom:12px;">Rating Distribution (Bimodal)</h3>
+      <div class="bar-chart">
+        <div class="bar-row">
+          <div class="bar-label">5 &#9733;</div>
+          <div class="bar-track"><div class="bar-fill" style="width:58.6%; background:var(--green);"></div></div>
+          <div class="bar-value">58.6%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">4 &#9733;</div>
+          <div class="bar-track"><div class="bar-fill" style="width:7.3%; background:var(--green); opacity:0.7;"></div></div>
+          <div class="bar-value">7.3%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">3 &#9733;</div>
+          <div class="bar-track"><div class="bar-fill" style="width:5.0%; background:var(--yellow);"></div></div>
+          <div class="bar-value">5.0%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">2 &#9733;</div>
+          <div class="bar-track"><div class="bar-fill" style="width:4.3%; background:var(--orange);"></div></div>
+          <div class="bar-value">4.3%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">1 &#9733;</div>
+          <div class="bar-track"><div class="bar-fill" style="width:24.7%; background:var(--red);"></div></div>
+          <div class="bar-value">24.7%</div>
+        </div>
+      </div>
+      <p style="font-size:13px; margin-top:8px;">
+        Strong bimodal pattern: users who love the app (5-star) or hate it (1-star) are most likely to leave reviews.
+        The 3-star "neutral" bucket is thin at 5%, which is typical for app store review distributions.
+      </p>
+    </div>
+    <div style="flex:1;">
+      <h3 style="font-size:14px; color:var(--text-dim); margin-bottom:12px;">Text Quality Breakdown</h3>
+      <div class="bar-chart">
+        <div class="bar-row">
+          <div class="bar-label" style="width:80px;">Very short</div>
+          <div class="bar-track"><div class="bar-fill" style="width:34.2%; background:var(--red); opacity:0.8;"></div></div>
+          <div class="bar-value">34.2%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label" style="width:80px;">Short</div>
+          <div class="bar-track"><div class="bar-fill" style="width:33.7%; background:var(--yellow);"></div></div>
+          <div class="bar-value">33.7%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label" style="width:80px;">Medium</div>
+          <div class="bar-track"><div class="bar-fill" style="width:22.1%; background:var(--green); opacity:0.8;"></div></div>
+          <div class="bar-value">22.1%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label" style="width:80px;">Long</div>
+          <div class="bar-track"><div class="bar-fill" style="width:10.1%; background:var(--accent);"></div></div>
+          <div class="bar-value">10.1%</div>
+        </div>
+      </div>
+      <h3 style="font-size:14px; color:var(--text-dim); margin-bottom:8px; margin-top:16px;">Quality Flags</h3>
+      <div class="grid-2" style="gap:8px;">
+        <div class="card" style="padding:10px 14px;">
+          <div style="font-size:22px; font-weight:700; color:var(--orange);">22.5%</div>
+          <div class="small">Single-word reviews</div>
+        </div>
+        <div class="card" style="padding:10px 14px;">
+          <div style="font-size:22px; font-weight:700; color:var(--yellow);">3.3%</div>
+          <div class="small">Emoji-only reviews</div>
+        </div>
+        <div class="card" style="padding:10px 14px;">
+          <div style="font-size:22px; font-weight:700; color:var(--red);">1.3%</div>
+          <div class="small">Repeated characters</div>
+        </div>
+        <div class="card" style="padding:10px 14px;">
+          <div style="font-size:22px; font-weight:700; color:var(--cyan);">15.2%</div>
+          <div class="small">Non-ASCII content</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 10: SAMPLE QUERIES ===== -->
+<div class="slide" id="slide-10">
+  <span class="slide-label">Queries</span>
+  <span class="tag tag-blue">Database CLI</span>
+  <h2>Sample Queries & CLI</h2>
+  <p class="mb-16" style="font-size:15px;">The system ships with a full CLI for querying, searching, and inspecting the database without writing SQL.</p>
+
+  <div class="grid-2" style="gap:24px;">
+    <div>
+      <h3 style="font-size:13px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Database CLI Commands</h3>
+      <div class="code-block" style="font-size:12px;">
+<span class="comment"># Get database statistics</span>
+$ python -m src.database.cli <span class="accent">stats</span>
+
+<span class="comment"># Query 1-star WhatsApp reviews</span>
+$ python -m src.database.cli <span class="accent">query</span> \
+    --app com.whatsapp --rating 1 --limit 10
+
+<span class="comment"># Search for crash reports across all apps</span>
+$ python -m src.database.cli <span class="accent">search</span> "crash" --limit 20
+
+<span class="comment"># Query reviews with developer replies</span>
+$ python -m src.database.cli <span class="accent">query</span> \
+    --app com.spotify.music --has-reply --rating 1</div>
+
+      <h3 style="font-size:13px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; margin-top:20px;">Ingestion CLI Commands</h3>
+      <div class="code-block" style="font-size:12px;">
+<span class="comment"># Single ingestion run</span>
+$ python -m src.ingestion.cli <span class="accent">--once</span>
+
+<span class="comment"># Start scheduled ingestion (every 4 hours)</span>
+$ python -m src.ingestion.cli
+
+<span class="comment"># Custom interval and specific apps</span>
+$ python -m src.ingestion.cli <span class="accent">--interval 3600</span> \
+    --apps com.whatsapp,com.spotify.music
+
+<span class="comment"># View run history</span>
+$ python -m src.ingestion.cli <span class="accent">--history</span>
+
+<span class="comment"># View latest health report</span>
+$ python -m src.ingestion.cli <span class="accent">--health</span>
+
+<span class="comment"># View health trend for last 10 runs</span>
+$ python -m src.ingestion.cli <span class="accent">--health-history 10</span></div>
+    </div>
+    <div>
+      <h3 style="font-size:13px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">Pre-built SQL Views</h3>
+      <div class="code-block" style="font-size:11.5px;">
+<span class="comment">-- Sentiment-bucketed view with length categories</span>
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="type">v_reviews_sentiment</span>
+<span class="keyword">WHERE</span> sentiment_bucket = <span class="string">'negative'</span>
+  <span class="keyword">AND</span> length_bucket = <span class="string">'long'</span>
+<span class="keyword">LIMIT</span> <span class="num">20</span>;
+
+<span class="comment">-- Per-app statistics</span>
+<span class="keyword">SELECT</span> app_id, review_count, avg_rating,
+       positive_count, negative_count, replied_count
+<span class="keyword">FROM</span> <span class="type">v_app_stats</span>
+<span class="keyword">ORDER BY</span> review_count <span class="keyword">DESC</span>;
+
+<span class="comment">-- Daily review volume trends</span>
+<span class="keyword">SELECT</span> review_date, review_count, avg_rating,
+       five_star, one_star
+<span class="keyword">FROM</span> <span class="type">v_daily_stats</span>
+<span class="keyword">ORDER BY</span> review_date <span class="keyword">DESC</span> <span class="keyword">LIMIT</span> <span class="num">30</span>;
+
+<span class="comment">-- Reviews with app metadata</span>
+<span class="keyword">SELECT</span> app_title, author, rating, content
+<span class="keyword">FROM</span> <span class="type">v_reviews_with_app</span>
+<span class="keyword">WHERE</span> app_genre = <span class="string">'Communication'</span>
+  <span class="keyword">AND</span> rating = <span class="num">1</span>;</div>
+
+      <div class="card mt-16" style="border-left: 3px solid var(--accent2);">
+        <h3 style="color:var(--accent2);">Why Views Matter for Phase 3</h3>
+        <p>These views provide ready-made query patterns for the labeling interface.
+        <code>v_reviews_sentiment</code> maps directly to the labeling task &mdash;
+        surface long negative reviews first for annotation, since they carry the
+        most signal for model training.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 11: DESIGN DECISIONS ===== -->
+<div class="slide" id="slide-11">
+  <span class="slide-label">Decisions</span>
+  <span class="tag tag-purple">Trade-offs</span>
+  <h2>Key Design Decisions</h2>
+  <div class="grid-2" style="gap:20px;">
+    <div class="card" style="border-left: 3px solid var(--accent);">
+      <h3 style="color:var(--accent);">SQLite over PostgreSQL</h3>
+      <p><strong>Why:</strong> Zero infrastructure, single-file database, perfect for a project that starts local.
+      <strong>Trade-off:</strong> No concurrent writes, but ingestion is single-threaded so this doesn't matter.
+      <strong>Mitigation:</strong> Schema is PostgreSQL-compatible for future migration.</p>
+    </div>
+    <div class="card" style="border-left: 3px solid var(--green);">
+      <h3 style="color:var(--green);">Dedup at Insert Time, Not Fetch Time</h3>
+      <p><strong>Why:</strong> The Google Play API returns reviews sorted by "newest" &mdash; fetching 300 per app every 4 hours means significant overlap.
+      <strong>Trade-off:</strong> We fetch data we already have (wasted API calls).
+      <strong>Rationale:</strong> It's simpler and safer than trying to track "last fetched timestamp" per app, which is fragile.</p>
+    </div>
+    <div class="card" style="border-left: 3px solid var(--yellow);">
+      <h3 style="color:var(--yellow);">Sleep-loop Scheduler over Cron/Celery</h3>
+      <p><strong>Why:</strong> A simple <code>while True: run(); sleep(interval)</code> loop with signal handlers keeps the system self-contained.
+      <strong>Trade-off:</strong> No distributed scheduling, no retry queue.
+      <strong>Rationale:</strong> For a single-machine pipeline, this is the right complexity level. Adding Celery would be premature.</p>
+    </div>
+    <div class="card" style="border-left: 3px solid var(--accent2);">
+      <h3 style="color:var(--accent2);">Denormalized Monitoring Metrics</h3>
+      <p><strong>Why:</strong> Key metrics (dedup_rate, error_rate, etc.) are stored as columns AND as a full JSON report.
+      <strong>Trade-off:</strong> Slight data duplication.
+      <strong>Rationale:</strong> Columns allow fast SQL aggregation queries; JSON preserves the complete report for detailed analysis.</p>
+    </div>
+    <div class="card" style="border-left: 3px solid var(--cyan);">
+      <h3 style="color:var(--cyan);">Junction Table for Provenance</h3>
+      <p><strong>Why:</strong> <code>review_scrape_log</code> tracks which run collected which review.
+      <strong>Trade-off:</strong> Extra writes on every insert.
+      <strong>Rationale:</strong> Essential for debugging and understanding data freshness. Also enables the backfill feature for historical runs.</p>
+    </div>
+    <div class="card" style="border-left: 3px solid var(--orange);">
+      <h3 style="color:var(--orange);">Random Jitter Rate Limiting</h3>
+      <p><strong>Why:</strong> Delays between API requests use <code>random(1.0, 3.0)</code> seconds.
+      <strong>Trade-off:</strong> Slower than fixed delay but harder to detect/block as automated traffic.
+      <strong>Rationale:</strong> Protects against API bans while keeping throughput reasonable (~885 reviews/min).</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SLIDE 12: REFLECTIONS ===== -->
+<div class="slide" id="slide-12">
+  <span class="slide-label">Reflections</span>
+  <span class="tag tag-green">Retrospective</span>
+  <h2>What Worked, What Was Challenging, What I'd Improve</h2>
+
+  <div class="grid-3" style="gap:20px;">
+    <div>
+      <h3 style="color:var(--green); margin-bottom:16px;">What Worked Well</h3>
+      <ul class="bullets">
+        <li><strong>Modular architecture</strong> &mdash; clean separation of scraper, pipeline, storage, and monitoring made it easy to build and test each layer independently</li>
+        <li><strong>Data source research first</strong> &mdash; evaluating sources before coding prevented rework; Google Play was the right choice</li>
+        <li><strong>Incremental build approach</strong> &mdash; Phase 1 (bulk scrape) then Phase 2 (live pipeline) let us validate the schema before adding automation</li>
+        <li><strong>Dedup + audit trail</strong> &mdash; the review_scrape_log table paid dividends immediately when debugging overlapping runs</li>
+        <li><strong>Self-monitoring</strong> &mdash; detecting anomalies automatically caught issues like API staleness early</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="color:var(--yellow); margin-bottom:16px;">What Was Challenging</h3>
+      <ul class="bullets">
+        <li><strong>API unpredictability</strong> &mdash; Google Play API sometimes returns more reviews than requested (400 instead of 300), pagination behavior is opaque</li>
+        <li><strong>Data quality noise</strong> &mdash; 39% of reviews are low-signal (single word, emoji-only, repeated characters), requiring careful filtering decisions</li>
+        <li><strong>Dedup rate tuning</strong> &mdash; deciding when high dedup is "normal" vs "API is stale" required empirical observation across multiple runs</li>
+        <li><strong>Schema evolution</strong> &mdash; adding ingestion_metrics after the initial schema required a backfill mechanism for historical data</li>
+        <li><strong>Balancing completeness vs simplicity</strong> &mdash; resisting the urge to over-engineer (no ORM, no task queue, no microservices)</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="color:var(--accent); margin-bottom:16px;">What I'd Improve</h3>
+      <ul class="bullets">
+        <li><strong>Add async I/O</strong> &mdash; concurrent per-app fetching (asyncio or threading) could cut ingestion time from 9 minutes to ~2 minutes</li>
+        <li><strong>Better test coverage</strong> &mdash; unit tests for the pipeline logic, especially edge cases in dedup and error handling</li>
+        <li><strong>Dashboard UI</strong> &mdash; a simple web dashboard to visualize monitoring trends instead of CLI-only output</li>
+        <li><strong>Smarter scheduling</strong> &mdash; adaptive intervals based on per-app review velocity instead of fixed 4-hour cycles</li>
+        <li><strong>Language detection</strong> &mdash; 15.2% of reviews are non-ASCII; adding langdetect would help filter for English-only training data</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="divider">
+  <p style="font-size:14px;">
+    Overall, the key lesson was that <strong>investing in data infrastructure pays off early</strong>.
+    The audit trail, monitoring, and schema design all seem like overhead initially, but they became
+    essential when debugging live ingestion runs and preparing data for the labeling phase.
+  </p>
+</div>
+
+<!-- ===== SLIDE 13: NEXT STEPS ===== -->
+<div class="slide" id="slide-13">
+  <span class="slide-label">Next</span>
+  <span class="tag tag-purple">Looking Ahead</span>
+  <h2>What's Next: Phase 3</h2>
+
+  <div class="cols" style="gap:32px;">
+    <div style="flex:1;">
+      <div class="card mb-16" style="border-left: 3px solid var(--accent2);">
+        <h3 style="color:var(--accent2); font-size:18px;">Labeling Interface</h3>
+        <p style="font-size:15px;">Build a web-based annotation tool for human labelers to assign sentiment labels to reviews. Prioritize long negative reviews (highest signal for model training). The <code>v_reviews_sentiment</code> view is already designed for this.</p>
+      </div>
+      <div class="card mb-16" style="border-left: 3px solid var(--accent);">
+        <h3 style="color:var(--accent); font-size:18px;">Training Pipeline</h3>
+        <p style="font-size:15px;">Create train/dev/test splits from labeled data. Build a reproducible training pipeline with experiment tracking. Leverage the star ratings as weak supervision labels alongside human annotations.</p>
+      </div>
+      <div class="card" style="border-left: 3px solid var(--green);">
+        <h3 style="color:var(--green); font-size:18px;">Evaluation Loops</h3>
+        <p style="font-size:15px;">Implement model evaluation with per-app breakdowns. Compare model predictions against the bimodal rating distribution observed in the data. Feed evaluation results back into labeling priorities.</p>
+      </div>
+    </div>
+    <div style="flex:1;">
+      <h3 style="font-size:14px; color:var(--text-dim); margin-bottom:12px;">Foundation Already in Place</h3>
+      <div class="table-wrap">
+        <table style="font-size:13px;">
+          <tr>
+            <th>Asset</th>
+            <th>Status</th>
+            <th>Feeds Into</th>
+          </tr>
+          <tr>
+            <td>87k+ reviews in SQLite</td>
+            <td><span class="green-text">Ready</span></td>
+            <td>Labeling queue</td>
+          </tr>
+          <tr>
+            <td>Sentiment-bucketed view</td>
+            <td><span class="green-text">Ready</span></td>
+            <td>Annotation priority</td>
+          </tr>
+          <tr>
+            <td>Star ratings (1-5)</td>
+            <td><span class="green-text">Ready</span></td>
+            <td>Weak supervision</td>
+          </tr>
+          <tr>
+            <td>Quality flags (short/emoji/etc.)</td>
+            <td><span class="green-text">Ready</span></td>
+            <td>Filtering noisy data</td>
+          </tr>
+          <tr>
+            <td>Per-app breakdowns</td>
+            <td><span class="green-text">Ready</span></td>
+            <td>Domain-specific eval</td>
+          </tr>
+          <tr>
+            <td>Continuous ingestion</td>
+            <td><span class="green-text">Running</span></td>
+            <td>Fresh training data</td>
+          </tr>
+          <tr>
+            <td>Monitoring + alerting</td>
+            <td><span class="green-text">Running</span></td>
+            <td>Data drift detection</td>
+          </tr>
+        </table>
+      </div>
+      <div class="card mt-16" style="text-align:center; background: linear-gradient(135deg, rgba(108,140,255,0.08), rgba(167,139,250,0.08));">
+        <p style="font-size:15px; color:var(--text);">
+          The ingestion system is designed to keep growing the dataset
+          while Phase 3 work proceeds in parallel &mdash; every 4 hours,
+          new reviews flow in automatically.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NAVIGATION ===== -->
+<div class="nav">
+  <button onclick="prevSlide()">&larr; Prev</button>
+  <span id="slideCounter">1 / 13</span>
+  <button onclick="nextSlide()">Next &rarr;</button>
+</div>
+
+<script>
+  let current = 1;
+  const total = 13;
+
+  function showSlide(n) {
+    document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+    document.getElementById('slide-' + n).classList.add('active');
+    document.getElementById('slideCounter').textContent = n + ' / ' + total;
+    document.getElementById('progressBar').style.width = ((n / total) * 100) + '%';
+    current = n;
+  }
+
+  function nextSlide() { if (current < total) showSlide(current + 1); }
+  function prevSlide() { if (current > 1) showSlide(current - 1); }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+    if (e.key === 'Home') { e.preventDefault(); showSlide(1); }
+    if (e.key === 'End') { e.preventDefault(); showSlide(total); }
+  });
+
+  // Initialize
+  showSlide(1);
+</script>
+
+</body>
+</html>
