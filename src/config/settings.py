@@ -6,7 +6,7 @@ target apps, rate limiting, output paths, and retry logic settings.
 """
 
 from pathlib import Path
-from typing import List
+from typing import Dict, List
 
 # =============================================================================
 # TARGET APPS
@@ -129,3 +129,38 @@ INGESTION_DB_PATH: str = "data/reviews.db"
 
 # Separate log file for ingestion runs
 INGESTION_LOG_FILE: str = "ingestion.log"
+
+# =============================================================================
+# LABELING SETTINGS
+# =============================================================================
+# Database path for labeling (same DB as ingestion)
+LABELING_DB_PATH: str = "data/reviews.db"
+
+# Reviews per labeling session batch
+LABELING_DEFAULT_BATCH_SIZE: int = 20
+
+# Default sampling strategy
+LABELING_DEFAULT_STRATEGY: str = "balanced"
+
+# Target total reviews in labeling queue
+LABELING_TARGET_QUEUE_SIZE: int = 3000
+
+# Per-tier allocation for queue population
+LABELING_TIER_ALLOCATION: Dict[int, int] = {
+    1: 800,   # Long negative (1-2 star, 200+ chars)
+    2: 700,   # Long positive (4-5 star, 200+ chars)
+    3: 500,   # Ambiguous middle (3-star, any length)
+    4: 400,   # Short meaningful
+}
+
+# Reserve for cross-app balancing (min 30 per app)
+LABELING_CROSS_APP_RESERVE: int = 600
+
+# Fraction of reviews labeled by multiple annotators (for agreement)
+LABELING_OVERLAP_PCT: float = 0.10
+
+# Separate log file for labeling
+LABELING_LOG_FILE: str = "labeling.log"
+
+# Training data export directory
+LABELING_EXPORT_DIR: str = "data/training"

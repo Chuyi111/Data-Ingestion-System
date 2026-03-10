@@ -536,3 +536,370 @@ class DatabaseManager:
                 self.db_path.stat().st_size / 1024 / 1024, 2
             ) if self.db_path.exists() else 0,
         }
+
+    # -------------------------------------------------------------------------
+    # Labeling: annotators
+    # -------------------------------------------------------------------------
+
+    def get_or_create_annotator(self, name: str) -> int:
+        """Get existing annotator by name, or create one. Returns annotator_id."""
+        conn = self.connect()
+        conn.execute(
+            "INSERT OR IGNORE INTO annotators (name) VALUES (?)", (name,)
+        )
+        conn.commit()
+        row = conn.execute(
+            "SELECT annotator_id FROM annotators WHERE name = ?", (name,)
+        ).fetchone()
+        return row["annotator_id"]
+
+    def get_annotator(self, annotator_id: int) -> Optional[Dict[str, Any]]:
+        """Get annotator by ID."""
+        conn = self.connect()
+        row = conn.execute(
+            "SELECT * FROM annotators WHERE annotator_id = ?", (annotator_id,)
+        ).fetchone()
+        return dict(row) if row else None
+
+    # -------------------------------------------------------------------------
+    # Labeling: labels
+    # -------------------------------------------------------------------------
+
+    def insert_label(
+        self,
+        review_id: str,
+        annotator_id: int,
+        sentiment: str,
+        confidence: str = "high",
+        notes: Optional[str] = None,
+    ) -> int:
+        """
+        Insert a sentiment label for a review.
+
+        Returns:
+            label_id of the new label
+        """
+        conn = self.connect()
+        cursor = conn.execute("""
+            INSERT INTO labels (review_id, annotator_id, sentiment, confidence, notes)
+            VALUES (?, ?, ?, ?, ?)
+        """, (review_id, annotator_id, sentiment, confidence, notes))
+        conn.commit()
+        return cursor.lastrowid
+
+    def get_labels_for_review(self, review_id: str) -> List[Dict[str, Any]]:
+        """Get all labels for a specific review."""
+        conn = self.connect()
+        rows = conn.execute(
+            "SELECT * FROM labels WHERE review_id = ?", (review_id,)
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_label_count(self, annotator_id: Optional[int] = None) -> int:
+        """Get total label count, optionally filtered by annotator."""
+        conn = self.connect()
+        if annotator_id is not None:
+            row = conn.execute(
+                "SELECT COUNT(*) FROM labels WHERE annotator_id = ?",
+                (annotator_id,)
+            ).fetchone()
+        else:
+            row = conn.execute("SELECT COUNT(*) FROM labels").fetchone()
+        return row[0]
+
+    # -------------------------------------------------------------------------
+    # Labeling: queue
+    # -------------------------------------------------------------------------
+
+    def populate_queue(
+        self, review_ids_with_tiers: List[Tuple[str, int]]
+    ) -> int:
+        """
+        Bulk-insert reviews into the label queue.
+
+        Args:
+            review_ids_with_tiers: List of (review_id, priority_tier) tuples
+
+        Returns:
+            Number of queue entries inserted
+        """
+        if not review_ids_with_tiers:
+            return 0
+
+        conn = self.connect()
+        cursor = conn.executemany(
+            "INSERT OR IGNORE INTO label_queue (review_id, priority_tier) VALUES (?, ?)",
+            review_ids_with_tiers
+        )
+        conn.commit()
+        return cursor.rowcount
+
+    def fetch_queue_batch(
+        self, batch_size: int, annotator_id: int
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetch and assign the next batch of reviews from the queue.
+
+        Selects pending items ordered by priority tier, marks them as
+        assigned to the annotator, and returns them joined with review
+        and app context.
+        """
+        conn = self.connect()
+
+        # Get pending queue items
+        queue_rows = conn.execute("""
+            SELECT queue_id, review_id, priority_tier
+            FROM label_queue
+            WHERE status = 'pending'
+            ORDER BY priority_tier ASC, queue_id ASC
+            LIMIT ?
+        """, (batch_size,)).fetchall()
+
+        if not queue_rows:
+            return []
+
+        # Mark as assigned
+        queue_ids = [row["queue_id"] for row in queue_rows]
+        placeholders = ",".join("?" * len(queue_ids))
+        conn.execute(f"""
+            UPDATE label_queue
+            SET status = 'assigned',
+                assigned_to = ?,
+                assigned_at = CURRENT_TIMESTAMP
+            WHERE queue_id IN ({placeholders})
+        """, [annotator_id] + queue_ids)
+        conn.commit()
+
+        # Fetch full review + app context for each
+        review_ids = [row["review_id"] for row in queue_rows]
+        results = []
+        for qrow in queue_rows:
+            review = conn.execute("""
+                SELECT r.*, a.title AS app_title, a.developer AS app_developer,
+                       a.genre AS app_genre
+                FROM reviews r
+                JOIN apps a ON r.app_id = a.app_id
+                WHERE r.review_id = ?
+            """, (qrow["review_id"],)).fetchone()
+
+            if review:
+                item = dict(review)
+                item["queue_id"] = qrow["queue_id"]
+                item["priority_tier"] = qrow["priority_tier"]
+                results.append(item)
+
+        return results
+
+    def complete_queue_item(
+        self, queue_id: int, status: str = "completed"
+    ) -> None:
+        """Mark a queue item as completed or skipped."""
+        conn = self.connect()
+        conn.execute("""
+            UPDATE label_queue
+            SET status = ?, completed_at = CURRENT_TIMESTAMP
+            WHERE queue_id = ?
+        """, (status, queue_id))
+        conn.commit()
+
+    def reset_abandoned_assignments(self, annotator_id: int) -> int:
+        """Reset assigned-but-incomplete queue items back to pending."""
+        conn = self.connect()
+        cursor = conn.execute("""
+            UPDATE label_queue
+            SET status = 'pending', assigned_to = NULL, assigned_at = NULL
+            WHERE assigned_to = ? AND status = 'assigned'
+        """, (annotator_id,))
+        conn.commit()
+        return cursor.rowcount
+
+    def get_queue_stats(self) -> Dict[str, Any]:
+        """Get queue breakdown by status and tier."""
+        conn = self.connect()
+
+        # By status
+        status_rows = conn.execute("""
+            SELECT status, COUNT(*) AS cnt
+            FROM label_queue GROUP BY status
+        """).fetchall()
+        by_status = {row["status"]: row["cnt"] for row in status_rows}
+
+        # By tier
+        tier_rows = conn.execute("""
+            SELECT priority_tier, status, COUNT(*) AS cnt
+            FROM label_queue GROUP BY priority_tier, status
+        """).fetchall()
+        by_tier = {}
+        for row in tier_rows:
+            tier = row["priority_tier"]
+            if tier not in by_tier:
+                by_tier[tier] = {}
+            by_tier[tier][row["status"]] = row["cnt"]
+
+        # Total
+        total = conn.execute(
+            "SELECT COUNT(*) FROM label_queue"
+        ).fetchone()[0]
+
+        return {
+            "total": total,
+            "by_status": by_status,
+            "by_tier": by_tier,
+        }
+
+    # -------------------------------------------------------------------------
+    # Labeling: sessions
+    # -------------------------------------------------------------------------
+
+    def start_label_session(self, annotator_id: int) -> int:
+        """Start a labeling session. Returns session_id."""
+        conn = self.connect()
+        cursor = conn.execute(
+            "INSERT INTO label_sessions (annotator_id) VALUES (?)",
+            (annotator_id,)
+        )
+        conn.commit()
+        return cursor.lastrowid
+
+    def complete_label_session(
+        self,
+        session_id: int,
+        labels_created: int,
+        labels_skipped: int,
+        avg_time: Optional[float] = None,
+    ) -> None:
+        """Record session completion."""
+        conn = self.connect()
+        conn.execute("""
+            UPDATE label_sessions
+            SET completed_at = CURRENT_TIMESTAMP,
+                status = 'completed',
+                labels_created = ?,
+                labels_skipped = ?,
+                avg_time_per_label_seconds = ?
+            WHERE session_id = ?
+        """, (labels_created, labels_skipped, avg_time, session_id))
+        conn.commit()
+
+    def abandon_label_session(self, session_id: int) -> None:
+        """Mark a session as abandoned (e.g. user quit early)."""
+        conn = self.connect()
+        conn.execute("""
+            UPDATE label_sessions
+            SET completed_at = CURRENT_TIMESTAMP, status = 'abandoned'
+            WHERE session_id = ?
+        """, (session_id,))
+        conn.commit()
+
+    def get_recent_sessions(
+        self, limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        """Get recent labeling sessions."""
+        conn = self.connect()
+        rows = conn.execute("""
+            SELECT ls.*, a.name AS annotator_name
+            FROM label_sessions ls
+            JOIN annotators a ON ls.annotator_id = a.annotator_id
+            ORDER BY ls.session_id DESC
+            LIMIT ?
+        """, (limit,)).fetchall()
+        return [dict(row) for row in rows]
+
+    # -------------------------------------------------------------------------
+    # Labeling: stats & queries
+    # -------------------------------------------------------------------------
+
+    def get_labeling_progress(self) -> Dict[str, Any]:
+        """Get overall labeling progress."""
+        conn = self.connect()
+
+        total_labeled = conn.execute(
+            "SELECT COUNT(DISTINCT review_id) FROM labels"
+        ).fetchone()[0]
+
+        total_queued = conn.execute(
+            "SELECT COUNT(*) FROM label_queue"
+        ).fetchone()[0]
+
+        queue_pending = conn.execute(
+            "SELECT COUNT(*) FROM label_queue WHERE status = 'pending'"
+        ).fetchone()[0]
+
+        queue_completed = conn.execute(
+            "SELECT COUNT(*) FROM label_queue WHERE status = 'completed'"
+        ).fetchone()[0]
+
+        # Per-app coverage
+        app_rows = conn.execute("""
+            SELECT r.app_id, a.title AS app_title,
+                   COUNT(DISTINCT l.review_id) AS labeled_count,
+                   COUNT(DISTINCT r.review_id) AS total_reviews
+            FROM reviews r
+            JOIN apps a ON r.app_id = a.app_id
+            LEFT JOIN labels l ON r.review_id = l.review_id
+            GROUP BY r.app_id
+            ORDER BY labeled_count DESC
+        """).fetchall()
+
+        return {
+            "total_labeled": total_labeled,
+            "total_queued": total_queued,
+            "queue_pending": queue_pending,
+            "queue_completed": queue_completed,
+            "per_app": [dict(row) for row in app_rows],
+        }
+
+    def get_label_distribution(
+        self, annotator_id: Optional[int] = None
+    ) -> Dict[str, int]:
+        """Get count of labels per sentiment class."""
+        conn = self.connect()
+        if annotator_id is not None:
+            rows = conn.execute("""
+                SELECT sentiment, COUNT(*) AS cnt FROM labels
+                WHERE annotator_id = ? GROUP BY sentiment
+            """, (annotator_id,)).fetchall()
+        else:
+            rows = conn.execute("""
+                SELECT sentiment, COUNT(*) AS cnt FROM labels
+                GROUP BY sentiment
+            """).fetchall()
+        return {row["sentiment"]: row["cnt"] for row in rows}
+
+    def get_agreement_pairs(self) -> List[Dict[str, Any]]:
+        """
+        Get reviews that have been labeled by multiple annotators,
+        with their labels for agreement computation.
+        """
+        conn = self.connect()
+        rows = conn.execute("""
+            SELECT l1.review_id,
+                   l1.annotator_id AS annotator_1,
+                   l1.sentiment AS label_1,
+                   l2.annotator_id AS annotator_2,
+                   l2.sentiment AS label_2
+            FROM labels l1
+            JOIN labels l2 ON l1.review_id = l2.review_id
+                          AND l1.annotator_id < l2.annotator_id
+        """).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_labeled_reviews(
+        self, min_confidence: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Get all labeled reviews via the v_labeled_reviews view."""
+        conn = self.connect()
+        if min_confidence:
+            confidence_order = {"high": 1, "medium": 2, "low": 3}
+            threshold = confidence_order.get(min_confidence, 3)
+            valid = [k for k, v in confidence_order.items() if v <= threshold]
+            placeholders = ",".join("?" * len(valid))
+            rows = conn.execute(
+                f"SELECT * FROM v_labeled_reviews WHERE confidence IN ({placeholders})",
+                valid
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM v_labeled_reviews"
+            ).fetchall()
+        return [dict(row) for row in rows]

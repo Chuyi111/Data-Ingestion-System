@@ -259,3 +259,146 @@ SELECT
 FROM reviews
 GROUP BY DATE(review_timestamp)
 ORDER BY review_date;
+
+-- ============================================================================
+-- LABELING SYSTEM TABLES (Phase 3)
+-- ============================================================================
+-- Schema extensions for human sentiment annotation. Supports stratified
+-- sampling, multi-annotator labeling with quality assurance, and training
+-- data export.
+
+-- ============================================================================
+-- ANNOTATORS TABLE
+-- ============================================================================
+-- Tracks who is labeling. Minimal - just enough for attribution.
+
+CREATE TABLE IF NOT EXISTS annotators (
+    annotator_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+    name            TEXT NOT NULL UNIQUE,
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_active       INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1))
+);
+
+-- ============================================================================
+-- LABELS TABLE
+-- ============================================================================
+-- One row per annotation. Multiple annotators can label the same review
+-- (for inter-annotator agreement measurement).
+
+CREATE TABLE IF NOT EXISTS labels (
+    label_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    review_id       TEXT NOT NULL,
+    annotator_id    INTEGER NOT NULL,
+
+    sentiment       TEXT NOT NULL
+                        CHECK (sentiment IN (
+                            'very_negative', 'negative', 'neutral',
+                            'positive', 'very_positive'
+                        )),
+    confidence      TEXT NOT NULL DEFAULT 'high'
+                        CHECK (confidence IN ('high', 'medium', 'low')),
+    notes           TEXT,
+
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE (review_id, annotator_id),
+    FOREIGN KEY (review_id) REFERENCES reviews(review_id) ON DELETE CASCADE,
+    FOREIGN KEY (annotator_id) REFERENCES annotators(annotator_id) ON DELETE CASCADE
+);
+
+-- ============================================================================
+-- LABEL_QUEUE TABLE
+-- ============================================================================
+-- Manages which reviews to label next, with priority tiers from the
+-- sampling strategy. Reviews flow: pending -> assigned -> completed/skipped.
+
+CREATE TABLE IF NOT EXISTS label_queue (
+    queue_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    review_id       TEXT NOT NULL,
+
+    priority_tier   INTEGER NOT NULL CHECK (priority_tier >= 1 AND priority_tier <= 4),
+    status          TEXT NOT NULL DEFAULT 'pending'
+                        CHECK (status IN ('pending', 'assigned', 'completed', 'skipped')),
+    assigned_to     INTEGER,
+
+    created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    assigned_at     TIMESTAMP,
+    completed_at    TIMESTAMP,
+
+    FOREIGN KEY (review_id) REFERENCES reviews(review_id) ON DELETE CASCADE,
+    FOREIGN KEY (assigned_to) REFERENCES annotators(annotator_id)
+);
+
+-- ============================================================================
+-- LABEL_SESSIONS TABLE
+-- ============================================================================
+-- Tracks each labeling session (mirrors scrape_runs for ingestion).
+-- One row per annotation session for productivity monitoring.
+
+CREATE TABLE IF NOT EXISTS label_sessions (
+    session_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    annotator_id    INTEGER NOT NULL,
+
+    started_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at    TIMESTAMP,
+    status          TEXT NOT NULL DEFAULT 'active'
+                        CHECK (status IN ('active', 'completed', 'abandoned')),
+
+    labels_created  INTEGER NOT NULL DEFAULT 0,
+    labels_skipped  INTEGER NOT NULL DEFAULT 0,
+    avg_time_per_label_seconds  REAL,
+
+    FOREIGN KEY (annotator_id) REFERENCES annotators(annotator_id) ON DELETE CASCADE
+);
+
+-- ============================================================================
+-- LABELING INDEXES
+-- ============================================================================
+
+CREATE INDEX IF NOT EXISTS idx_label_queue_status
+    ON label_queue(status, priority_tier);
+
+CREATE INDEX IF NOT EXISTS idx_label_queue_assigned
+    ON label_queue(assigned_to, status);
+
+CREATE INDEX IF NOT EXISTS idx_labels_review
+    ON labels(review_id);
+
+CREATE INDEX IF NOT EXISTS idx_labels_annotator
+    ON labels(annotator_id);
+
+-- ============================================================================
+-- LABELING VIEWS
+-- ============================================================================
+
+-- View: Labeled reviews with full context (review + app + annotator)
+CREATE VIEW IF NOT EXISTS v_labeled_reviews AS
+SELECT
+    l.label_id,
+    l.sentiment,
+    l.confidence,
+    l.annotator_id,
+    a.name AS annotator_name,
+    r.review_id,
+    r.content,
+    r.rating,
+    r.thumbs_up,
+    r.review_timestamp,
+    app.app_id,
+    app.title AS app_title,
+    app.genre AS app_genre,
+    LENGTH(r.content) AS content_length,
+    CASE
+        WHEN r.rating >= 4 THEN 'positive'
+        WHEN r.rating = 3 THEN 'neutral'
+        ELSE 'negative'
+    END AS star_sentiment_bucket,
+    CASE
+        WHEN l.sentiment IN ('very_positive', 'positive') AND r.rating <= 2 THEN 1
+        WHEN l.sentiment IN ('very_negative', 'negative') AND r.rating >= 4 THEN 1
+        ELSE 0
+    END AS star_label_mismatch
+FROM labels l
+JOIN reviews r ON l.review_id = r.review_id
+JOIN apps app ON r.app_id = app.app_id
+JOIN annotators a ON l.annotator_id = a.annotator_id;
